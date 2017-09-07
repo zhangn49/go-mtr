@@ -31,7 +31,7 @@ type Host struct {
 }
 
 type MTR struct {
-	Done        chan struct{}
+	Done        chan int
 	OutputRaw   []byte
 	Error       error
 	PacketsSent int
@@ -44,14 +44,14 @@ type MTR struct {
 // looking at the output. Other than that, the fields and json tags document what everything
 // means.
 func New(reportCycles int, host string, args ...string) *MTR {
-	m := &MTR{Done: make(chan struct{}), PacketsSent: reportCycles}
+	m := &MTR{Done: make(chan int), PacketsSent: reportCycles}
 	args = append([]string{"--raw", "-c", strconv.Itoa(reportCycles), host}, args...)
 	go func() {
-		defer close(m.Done)
 		m.OutputRaw, m.Error = exec.Command("mtr", args...).Output()
 		if m.Error == nil {
 			m.processOutput()
 		}
+		m.Done <- 1
 	}()
 	return m
 }
